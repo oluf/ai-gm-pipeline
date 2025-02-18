@@ -1,0 +1,56 @@
+# Python virtual environment
+venv/
+.env
+*.venv
+*.env
+
+# Python bytecode
+__pycache__/
+*.pyc
+*.pyo
+*.pyd
+
+# Logs & temporary files
+logs/
+*.log
+*.out
+*.tmp
+
+# Ignore database files
+*.sqlite3
+*.db
+
+# Ignore PyCharm project files
+.idea/
+*.iml
+
+# Ignore compiled & cache files
+*.cache
+*.egg-info/
+*.pytest_cache/
+
+# Ignore Jupyter Notebook checkpoints
+.ipynb_checkpoints/
+
+# Ignore large AI models
+models/
+!models/README.md  # Keep this file
+
+# Ignore indexed document storage
+index_store/
+!index_store/README.md  # Keep this file
+
+# Ignore ChromaDB storage
+chroma_db/
+data/**
+
+# Ignore Prefect cache
+prefect/
+
+# Ignore FastAPI static files (if generated)
+static/
+media/
+
+# Ignore Docker files (if using Docker)
+*.dockerignore
+docker-compose.yml
