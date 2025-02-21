@@ -54,3 +54,5 @@ media/
 # Ignore Docker files (if using Docker)
 *.dockerignore
 docker-compose.yml
+
+src/Temp-Process-PDFs
