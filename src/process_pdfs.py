@@ -12,7 +12,7 @@ import pdfplumber
 logging.basicConfig(level=logging.INFO, format='%(asctime)s - %(levelname)s - %(message)s')
 
 BASE_DIR = os.path.dirname(os.path.abspath(__file__))
-PROJECT_CHROMADB_PATH = os.path.join(BASE_DIR, "../data/rpg_sources_db")
+CHROMADB_PATH = os.path.join(BASE_DIR, "../data/rpg_sources_db")
 HASH_FILE_PATH = os.path.join(BASE_DIR, "../data/processed_files.json")
 PDF_STORE = os.path.join(BASE_DIR, "../data/pdfs")
 DB_COLLECTION = "rpg_sources"
@@ -20,8 +20,7 @@ CHUNK_SIZE = 512
 CHUNK_OVERLAP = 50
 
 # Setup the ChromaDB client and collection
-chromadb_path = os.path.join(BASE_DIR, PROJECT_CHROMADB_PATH)
-chromadb_client = chromadb.PersistentClient(path=chromadb_path)
+chromadb_client = chromadb.PersistentClient(path=CHROMADB_PATH)
 collection = chromadb_client.get_or_create_collection(DB_COLLECTION)
 
 # Download/setup the embedding model
