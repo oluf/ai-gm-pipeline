@@ -18,13 +18,14 @@ PDF_STORE = os.path.join(BASE_DIR, "../data/pdfs")
 DB_COLLECTION = "rpg_sources"
 CHUNK_SIZE = 512
 CHUNK_OVERLAP = 50
+EMBEDDING_MODEL_NAME = 'all-MiniLM-L6-v2'
 
 # Setup the ChromaDB client and collection
 chromadb_client = chromadb.PersistentClient(path=CHROMADB_PATH)
 collection = chromadb_client.get_or_create_collection(DB_COLLECTION)
 
 # Download/setup the embedding model
-embedding_model = SentenceTransformer('all-MiniLM-L6-v2')
+embedding_model = SentenceTransformer(EMBEDDING_MODEL_NAME)
 
 def confirm_project_paths() -> None:
     """
