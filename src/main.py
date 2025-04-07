@@ -47,7 +47,6 @@ def format_search_results(
     return combined
 
 
-
 @app.get("/")
 def read_root() -> dict:
     """
@@ -73,7 +72,6 @@ def search(query: str) -> dict:
         raise HTTPException(status_code=500, detail="Internal Server Error")
 
 
-
 @app.get("/ai-search")
 def ai_search(query: str) -> dict:
     """
@@ -81,11 +79,15 @@ def ai_search(query: str) -> dict:
     """
     try:
         search_results = retriever.search(query)
-        retrieved_context = "\n".join(search_results['documents'])
+        documents = search_results.get("documents", [])
+        if documents and isinstance(documents[0], list):
+            documents = documents[0]
+
+        retrieved_context = "\n".join(documents)
+
         ai_response = llm.generate_response(query, retrieved_context)
         return {"response": ai_response}
     except Exception as e:
         logging.error(f"Error during AI search: {e}")
         raise HTTPException(status_code=500, detail="Internal Server Error")
-
 

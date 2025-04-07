@@ -2,16 +2,11 @@ import subprocess
 import logging
 import re
 
+from config import LLAMA_BINARY, GPU_LAYERS, TEMPERATURE, MODEL_FILE
+
+
 # Setup logging
 logging.basicConfig(level=logging.INFO, format='%(asctime)s - %(levelname)s - %(message)s')
-
-# Define constants for Llama.cpp
-LLAMA_BINARY = "/home/oluf/bin/llama.cpp/build/bin/llama-run"
-MODEL_FILE = "/home/oluf/projects/ai-gm-pipeline/models/mythomax-13B.Q4_K_M.gguf"
-
-GPU_LAYERS = "35"
-TEMPERATURE = "0.7"
-TIMEOUT = 30
 
 
 class LLMIntegration:

@@ -2,33 +2,23 @@ import os
 import json
 import hashlib
 import logging
-from typing import Dict, List, IO
+from typing import Dict
 import chromadb
 from langchain.text_splitter import RecursiveCharacterTextSplitter
 from sentence_transformers import SentenceTransformer
 import pdfplumber
 
+from config import CHROMADB_PATH, DB_COLLECTION, EMBEDDING_MODEL_NAME, HASH_FILE_PATH, PDF_STORE
+
 # Setup logging
 logging.basicConfig(level=logging.INFO, format='%(asctime)s - %(levelname)s - %(message)s')
-
-BASE_DIR = os.path.dirname(os.path.abspath(__file__))
-CHROMADB_PATH = os.path.join(BASE_DIR, "../data/rpg_sources_db")
-HASH_FILE_PATH = os.path.join(BASE_DIR, "../data/processed_files.json")
-PDF_STORE = os.path.join(BASE_DIR, "../data/pdfs")
-DB_COLLECTION = "rpg_sources"
-CHUNK_SIZE = 768
-CHUNK_OVERLAP = 100
-EMBEDDING_MODEL_NAME = 'all-MiniLM-L6-v2'
-
 
 # Setup the ChromaDB client and collection
 chromadb_client = chromadb.PersistentClient(path=CHROMADB_PATH)
 collection = chromadb_client.get_or_create_collection(DB_COLLECTION)
 
-
 # Download/setup the embedding model
 embedding_model = SentenceTransformer(EMBEDDING_MODEL_NAME)
-
 
 def confirm_project_paths() -> None:
     """
@@ -49,7 +39,6 @@ def confirm_project_paths() -> None:
     else:
         logging.info(f"{PDF_STORE} exists. Skipping.")
 
-
 def load_processed_files() -> Dict[str, str]:
     """
     Load the dictionary of processed file hashes from a JSON file.
@@ -60,7 +49,6 @@ def load_processed_files() -> Dict[str, str]:
             return json.load(f)
     return {}
 
-
 def compute_file_hash(file: str) -> str:
     """
     Compute the MD5 hash of a file.
@@ -70,17 +58,26 @@ def compute_file_hash(file: str) -> str:
         hasher.update(f.read())
     return hasher.hexdigest()
 
-
 def extract_text_from_pdf(file: str) -> str:
     """
-    Extract text from a PDF file.
+    Extract text and tables from a PDF file.
     """
     text = ""
     with pdfplumber.open(file) as pdf:
         for i, page in enumerate(pdf.pages):
-            text += page.extract_text() + f"\n(Page {i + 1})\n"
-    return text.strip()
+            page_text = page.extract_text() or ""
+            tables = page.extract_tables() or []
 
+            table_text = ""
+            for table in tables:
+                formatted = "\n".join([
+                    " | ".join(cell or "" for cell in row)
+                    for row in table if any((cell or "").strip() for cell in row)
+                ])
+                table_text += f"\n[Page {i+1} Table]\n{formatted}\n"
+
+            text += page_text + table_text + f"\n(Page {i + 1})\n"
+    return text.strip()
 
 def save_processed_files(processed_files_data: Dict[str, str]) -> None:
     """
@@ -89,15 +86,25 @@ def save_processed_files(processed_files_data: Dict[str, str]) -> None:
     with open(HASH_FILE_PATH, "w") as f:
         json.dump(processed_files_data, f)
 
-
 def chunk_and_store_pdf(file: str) -> None:
     """
     Split text from a PDF file into chunks, generate embeddings, and store them in ChromaDB.
     """
     text = extract_text_from_pdf(file)
-    splitter = RecursiveCharacterTextSplitter(chunk_size=CHUNK_SIZE, chunk_overlap=CHUNK_OVERLAP)
-    chunks = splitter.split_text(text)
 
+    splitter = RecursiveCharacterTextSplitter(
+        chunk_size=768,
+        chunk_overlap=100,
+        separators=[
+            "\n\n",
+            "\n",
+            ".",
+            " ",
+            ""
+        ]
+    )
+
+    chunks = splitter.split_text(text)
     embeddings = embedding_model.encode(chunks)
 
     ids = []
@@ -110,7 +117,6 @@ def chunk_and_store_pdf(file: str) -> None:
 
     collection.add(ids=ids, documents=chunks, embeddings=embeddings, metadatas=metadata)
     logging.info(f"Stored {len(chunks)} chunks from {file} in ChromaDB")
-
 
 if __name__ == "__main__":
     confirm_project_paths()

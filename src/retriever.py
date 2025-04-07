@@ -1,25 +1,20 @@
-import os
 import logging
 import chromadb
 from sentence_transformers import SentenceTransformer
 from typing import Dict, List, Union, Any
 
+from config import CHROMADB_PATH, DB_COLLECTION, EMBEDDING_MODEL_NAME, DEFAULT_N_RESULTS
+
+
 # Setup logging
 logging.basicConfig(level=logging.INFO, format='%(asctime)s - %(levelname)s - %(message)s')
-
-# Constants
-BASE_DIR = os.path.dirname(os.path.abspath(__file__))
-CHROMADB_PATH = os.path.join(BASE_DIR, "../data/rpg_sources_db")
-COLLECTION_NAME = "rpg_sources"
-EMBEDDING_MODEL_NAME = 'all-MiniLM-L6-v2'
-DEFAULT_N_RESULTS = 3
 
 
 class Retriever:
     def __init__(self) -> None:
         try:
             self.client = chromadb.PersistentClient(path=CHROMADB_PATH)
-            self.collection = self.client.get_or_create_collection(COLLECTION_NAME)
+            self.collection = self.client.get_or_create_collection(DB_COLLECTION)
             self.embedding_model = SentenceTransformer(EMBEDDING_MODEL_NAME)
             logging.info("Retriever initialized successfully.")
         except Exception as e:
