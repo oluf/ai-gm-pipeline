@@ -16,16 +16,19 @@ CHROMADB_PATH = os.path.join(BASE_DIR, "../data/rpg_sources_db")
 HASH_FILE_PATH = os.path.join(BASE_DIR, "../data/processed_files.json")
 PDF_STORE = os.path.join(BASE_DIR, "../data/pdfs")
 DB_COLLECTION = "rpg_sources"
-CHUNK_SIZE = 512
-CHUNK_OVERLAP = 50
+CHUNK_SIZE = 768
+CHUNK_OVERLAP = 100
 EMBEDDING_MODEL_NAME = 'all-MiniLM-L6-v2'
+
 
 # Setup the ChromaDB client and collection
 chromadb_client = chromadb.PersistentClient(path=CHROMADB_PATH)
 collection = chromadb_client.get_or_create_collection(DB_COLLECTION)
 
+
 # Download/setup the embedding model
 embedding_model = SentenceTransformer(EMBEDDING_MODEL_NAME)
+
 
 def confirm_project_paths() -> None:
     """
@@ -46,6 +49,7 @@ def confirm_project_paths() -> None:
     else:
         logging.info(f"{PDF_STORE} exists. Skipping.")
 
+
 def load_processed_files() -> Dict[str, str]:
     """
     Load the dictionary of processed file hashes from a JSON file.
@@ -56,6 +60,7 @@ def load_processed_files() -> Dict[str, str]:
             return json.load(f)
     return {}
 
+
 def compute_file_hash(file: str) -> str:
     """
     Compute the MD5 hash of a file.
@@ -64,6 +69,7 @@ def compute_file_hash(file: str) -> str:
     with open(file, "rb") as f:
         hasher.update(f.read())
     return hasher.hexdigest()
+
 
 def extract_text_from_pdf(file: str) -> str:
     """
@@ -75,12 +81,14 @@ def extract_text_from_pdf(file: str) -> str:
             text += page.extract_text() + f"\n(Page {i + 1})\n"
     return text.strip()
 
+
 def save_processed_files(processed_files_data: Dict[str, str]) -> None:
     """
     Save the updated dictionary of processed file hashes to a JSON file.
     """
     with open(HASH_FILE_PATH, "w") as f:
         json.dump(processed_files_data, f)
+
 
 def chunk_and_store_pdf(file: str) -> None:
     """
@@ -102,6 +110,7 @@ def chunk_and_store_pdf(file: str) -> None:
 
     collection.add(ids=ids, documents=chunks, embeddings=embeddings, metadatas=metadata)
     logging.info(f"Stored {len(chunks)} chunks from {file} in ChromaDB")
+
 
 if __name__ == "__main__":
     confirm_project_paths()

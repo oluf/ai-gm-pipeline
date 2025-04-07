@@ -2,7 +2,7 @@ import os
 import logging
 import chromadb
 from sentence_transformers import SentenceTransformer
-from typing import List, Dict
+from typing import Dict, List, Union, Any
 
 # Setup logging
 logging.basicConfig(level=logging.INFO, format='%(asctime)s - %(levelname)s - %(message)s')
@@ -26,7 +26,7 @@ class Retriever:
             logging.error(f"Failed to initialize Retriever: {e}")
             raise
 
-    def search(self, query: str, n_results: int = DEFAULT_N_RESULTS) -> Dict[str, List[str]]:
+    def search(self, query: str, n_results: int = DEFAULT_N_RESULTS) -> Dict[str, List[List[Union[str, Dict[str, Any]]]]]:
         """
         Search for relevant RPG rules based on the given query.
 
@@ -39,8 +39,16 @@ class Retriever:
         """
         try:
             query_embedding = self.embedding_model.encode(query)
-            search_results = self.collection.query(query_embeddings=[query_embedding], n_results=n_results)
-            return {"documents": search_results["documents"][0]}
+            search_results = self.collection.query(
+                query_embeddings=[query_embedding],
+                n_results=n_results,
+                include=["documents", "metadatas"]
+            )
+
+            return {
+                "documents": search_results["documents"],
+                "metadatas": search_results["metadatas"]
+            }
         except Exception as e:
             logging.error(f"Error during search: {e}")
             return {"documents": []}

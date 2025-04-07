@@ -1,14 +1,52 @@
 import logging
 from fastapi import FastAPI, HTTPException
-from src.retriever import Retriever
-from src.llm_integration import LLMIntegration
+from retriever import Retriever
+from llm_integration import LLMIntegration
+from typing import List, Dict, Any, Union
+import os
+
 
 # Setup logging
 logging.basicConfig(level=logging.INFO, format='%(asctime)s - %(levelname)s - %(message)s')
 
+
 app = FastAPI()
 retriever = Retriever()
 llm = LLMIntegration()
+
+
+def format_search_results(
+    documents_nested: List[Union[List[str], str]],
+    metadatas_nested: List[Union[List[Dict[str, Any]], Dict[str, Any]]]
+) -> List[Dict[str, Any]]:
+    """
+    Takes raw ChromaDB results and formats them with metadata.
+    Flattens nested lists and zips results into a structured format.
+    """
+    documents = documents_nested[0] if documents_nested and isinstance(documents_nested[0], list) else documents_nested
+    metadatas = metadatas_nested[0] if metadatas_nested and isinstance(metadatas_nested[0], list) else metadatas_nested
+
+    if not isinstance(documents, list) or not isinstance(metadatas, list):
+        return []
+
+    combined = []
+    for doc, meta in zip(documents, metadatas):
+        source = "unknown"
+        chunk_index = -1
+
+        if isinstance(meta, dict):
+            source = os.path.basename(str(meta.get("source", "unknown")))
+            chunk_index = meta.get("chunk_index", -1)
+
+        combined.append({
+            "text": doc,
+            "source": source,
+            "chunk_index": chunk_index
+        })
+
+    return combined
+
+
 
 @app.get("/")
 def read_root() -> dict:
@@ -17,19 +55,24 @@ def read_root() -> dict:
     """
     return {"message": "FastAPI is running!"}
 
+
 @app.get("/search")
 def search(query: str) -> dict:
-    """
-    Retrieve relevant RPG rules based on the query.
-    """
     try:
         search_results = retriever.search(query)
-        logging.info(f"Query: {query}")
-        logging.info(f"Search Results: {search_results}")
-        return {"response": search_results}
+
+        formatted = format_search_results(
+            documents_nested=search_results.get("documents", []),
+            metadatas_nested=search_results.get("metadatas", [])
+        )
+
+        return {"response": formatted}
+
     except Exception as e:
         logging.error(f"Error during search: {e}")
         raise HTTPException(status_code=500, detail="Internal Server Error")
+
+
 
 @app.get("/ai-search")
 def ai_search(query: str) -> dict:
@@ -44,3 +87,5 @@ def ai_search(query: str) -> dict:
     except Exception as e:
         logging.error(f"Error during AI search: {e}")
         raise HTTPException(status_code=500, detail="Internal Server Error")
+
+
